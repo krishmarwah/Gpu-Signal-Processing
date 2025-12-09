@@ -1,47 +1,25 @@
-# Gpu-Signal-Processing
+Project Description
 
-#include <iostream>
-#include <vector>
-#include <fstream>
-#include <cuda.h>
+This project demonstrates GPU-accelerated signal processing using CUDA. A large dataset of signal samples stored in a CSV file is processed on the GPU, where each value is scaled by a constant factor using a CUDA kernel. The program uses parallel threads to process millions of signal values simultaneously.
 
-__global__ void scaleSignal(float *data, int n, float factor) {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx < n)
-        data[idx] *= factor;
-}
+GPU Usage
 
-int main() {
-    std::vector<float> signal;
-    float value;
+The CUDA kernel assigns one thread per signal element. Each thread multiplies its assigned value by a constant scale factor, demonstrating data-parallel signal processing.
 
-    // Load CSV data
-    std::ifstream file("signal.csv");
-    while (file >> value)
-        signal.push_back(value);
+Dataset
 
-    int n = signal.size();
-    size_t bytes = n * sizeof(float);
+The dataset is a CSV file containing over one million signal values.
 
-    // Allocate GPU memory
-    float *d_data;
-    cudaMalloc(&d_data, bytes);
-    cudaMemcpy(d_data, signal.data(), bytes, cudaMemcpyHostToDevice);
+Outcome
 
-    // Kernel launch
-    int threads = 256;
-    int blocks = (n + threads - 1) / threads;
-    scaleSignal<<<blocks, threads>>>(d_data, n, 2.0f);
-    cudaDeviceSynchronize();
+All signal values are processed using the GPU and stored into an output file.
 
-    // Copy back
-    cudaMemcpy(signal.data(), d_data, bytes, cudaMemcpyDeviceToHost);
 
-    // Save output
-    std::ofstream out("output.csv");
-    for (float x : signal)
-        out << x << "\n";
+Generate Dataset
+for i in {1..1000000}; do echo $((RANDOM % 100)); done > signal.csv
 
-    cudaFree(d_data);
-    std::cout << "GPU Signal Processing Complete\n";
-}
+Compile and Run
+
+nvcc gpu_signal_scale.cu -o signal_gpu
+./signal_gpu
+
